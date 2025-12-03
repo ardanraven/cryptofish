@@ -500,7 +500,7 @@
                         await updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(val) });
                     } catch(e) { accumulatedIncome += val; }
                 }
-            }, 30000);
+            }, 60000);
         }
 
         function updateUI() {
