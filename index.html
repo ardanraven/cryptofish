@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoFish Tycoon - Mercado Volátil</title>
+    <title>CryptoFish Tycoon - Exchange Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
         
@@ -39,7 +40,7 @@
     <div id="market-ticker-bg" class="w-full h-8 bg-slate-900 border-b border-slate-800 flex items-center overflow-hidden fixed top-0 z-50 shadow-lg">
         <div class="ticker-wrap w-full">
             <div class="ticker-move text-xs font-mono font-bold flex gap-8 items-center text-slate-300" id="market-ticker-content">
-                Carregando dados da blockchain...
+                Iniciando feeds de preço global...
             </div>
         </div>
     </div>
@@ -47,82 +48,85 @@
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="fixed inset-0 z-[60] flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80')] bg-cover bg-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
-        <div class="relative bg-slate-900/90 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md m-4">
+        <div class="relative bg-slate-900/90 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md m-4 border-t-4 border-t-blue-500">
             <div class="text-center mb-8">
                 <h1 class="text-4xl font-black bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-2">CRYPTO FISH</h1>
-                <p class="text-slate-400 text-xs uppercase tracking-widest">Exchange Descentralizada</p>
+                <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Exchange & NFT Ecosystem</p>
             </div>
             <div class="flex bg-slate-800 rounded-lg p-1 mb-6">
-                <button onclick="toggleAuthMode('login')" id="btn-mode-login" class="flex-1 py-2 rounded font-bold text-sm bg-blue-600 text-white transition-all">Entrar</button>
-                <button onclick="toggleAuthMode('signup')" id="btn-mode-signup" class="flex-1 py-2 rounded font-bold text-sm text-slate-400 hover:text-white transition-all">Criar</button>
+                <button onclick="toggleAuthMode('login')" id="btn-mode-login" class="flex-1 py-2 rounded font-bold text-sm bg-blue-600 text-white transition-all">Acessar Wallet</button>
+                <button onclick="toggleAuthMode('signup')" id="btn-mode-signup" class="flex-1 py-2 rounded font-bold text-sm text-slate-400 hover:text-white transition-all">Criar Conta</button>
             </div>
             <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
                 <div id="field-username" class="hidden">
-                    <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Trader ID (Nome)</label>
-                    <input type="text" id="input-username" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white" placeholder="Whale_01">
+                    <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Trader ID</label>
+                    <input type="text" id="input-username" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="Whale_01">
                 </div>
                 <div>
                     <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Email</label>
-                    <input type="email" id="input-email" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white" placeholder="trader@crypto.com">
+                    <input type="email" id="input-email" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="trader@crypto.com">
                 </div>
                 <div>
                     <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Senha</label>
-                    <input type="password" id="input-password" required minlength="6" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white" placeholder="******">
+                    <input type="password" id="input-password" required minlength="6" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="******">
                 </div>
                 <div id="auth-error" class="text-red-400 text-xs text-center hidden p-2 bg-red-900/20 rounded border border-red-900/50"></div>
-                <button type="submit" id="btn-auth-submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all">Conectar à Rede</button>
+                <button type="submit" id="btn-auth-submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all">
+                    Conectar à Rede
+                </button>
             </form>
         </div>
     </div>
 
     <!-- GAME UI -->
-    <div id="game-ui" class="hidden max-w-4xl mx-auto pt-10">
+    <div id="game-ui" class="hidden max-w-4xl mx-auto pt-10 px-4">
         
         <!-- HEADER -->
-        <header class="sticky top-8 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 p-4 shadow-xl mb-6 rounded-b-2xl mx-2">
-            <div class="flex justify-between items-center">
+        <header class="bg-slate-900/90 backdrop-blur border border-slate-800 p-4 shadow-xl mb-6 rounded-2xl">
+            <div class="flex justify-between items-center mb-3">
                 <div class="flex items-center gap-3">
                     <div id="user-avatar" class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-lg border-2 border-slate-800 shadow-xl">U</div>
                     <div>
-                        <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Patrimônio Líquido</div>
-                        <div class="font-mono text-xl text-green-400 font-bold flex items-center gap-1 drop-shadow-sm relative">
-                            <i data-lucide="coins" class="w-4 h-4"></i> $<span id="user-balance">0</span>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Saldo FISH</div>
+                        <div class="font-mono text-xl text-cyan-400 font-bold flex items-center gap-1 drop-shadow-sm relative">
+                            <i data-lucide="fish" class="w-4 h-4"></i> <span id="user-balance">0</span>
                             <div id="income-popups" class="absolute top-0 right-0 w-full h-full pointer-events-none"></div>
                         </div>
                     </div>
                 </div>
                 <div class="flex flex-col items-end">
-                    <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Renda (APY)</div>
-                    <div class="font-mono text-base text-yellow-400 font-bold flex items-center gap-1 transition-all" id="income-container">
-                        <i data-lucide="trending-up" class="w-4 h-4"></i> +$<span id="user-income">0.00</span>/s
+                    <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Saldo BRL (Fiat)</div>
+                    <div class="font-mono text-xl text-green-400 font-bold flex items-center gap-1 transition-all">
+                        R$ <span id="user-balance-brl">0,00</span>
                     </div>
                 </div>
-                <button onclick="handleLogout()" class="ml-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors" title="Desconectar"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                <button onclick="handleLogout()" class="ml-2 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors" title="Desconectar"><i data-lucide="log-out" class="w-5 h-5"></i></button>
             </div>
             
             <!-- ECONOMIC STATUS BAR -->
-            <div class="mt-3 flex gap-2 text-[10px] font-mono border-t border-slate-800 pt-2 overflow-x-auto">
-                <div id="market-status" class="flex-1 min-w-[100px] bg-slate-800 rounded px-2 py-1 flex justify-between items-center text-gray-300">
-                    <span>MERCADO</span> <span class="font-bold">---</span>
+            <div class="flex gap-2 text-[10px] font-mono border-t border-slate-800 pt-3 overflow-x-auto">
+                <div id="market-status" class="flex-1 min-w-[100px] bg-slate-950 rounded px-3 py-1.5 flex justify-between items-center text-gray-300 border border-slate-800">
+                    <span>TREND</span> <span class="font-bold">---</span>
                 </div>
-                <div id="gas-fee" class="flex-1 min-w-[100px] bg-slate-800 rounded px-2 py-1 flex justify-between items-center text-gray-300">
-                    <span>GAS</span> <span class="font-bold">$20</span>
+                <div id="fish-price-display" class="flex-1 min-w-[120px] bg-slate-950 rounded px-3 py-1.5 flex justify-between items-center text-gray-300 border border-slate-800">
+                    <span>1 FISH</span> <span class="text-yellow-400 font-bold">R$ ---</span>
                 </div>
-                <div id="hype-tag" class="flex-1 min-w-[100px] bg-purple-900/50 rounded px-2 py-1 flex justify-between items-center text-purple-300 border border-purple-500/30">
+                <div id="hype-tag" class="flex-1 min-w-[100px] bg-purple-900/20 rounded px-3 py-1.5 flex justify-between items-center text-purple-300 border border-purple-500/30">
                     <span>HYPE</span> <span class="font-bold">---</span>
                 </div>
             </div>
         </header>
 
         <!-- TABS -->
-        <div class="px-4 mb-6 flex gap-2 overflow-x-auto scrollbar-hide">
-            <button onclick="switchTab('fishing')" id="tab-fishing" class="tab-btn flex-1 min-w-[100px] bg-blue-600 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transform scale-105 border border-blue-500 transition-all"><i data-lucide="anchor" class="w-4 h-4"></i> Minerar</button>
-            <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all"><i data-lucide="wallet" class="w-4 h-4"></i> Wallet</button>
-            <button onclick="switchTab('market')" id="tab-market" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Exchange</button>
-            <button onclick="switchTab('ranking')" id="tab-ranking" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all"><i data-lucide="trophy" class="w-4 h-4"></i> Ranking</button>
+        <div class="mb-6 flex gap-2 overflow-x-auto scrollbar-hide">
+            <button onclick="switchTab('fishing')" id="tab-fishing" class="tab-btn flex-1 min-w-[100px] bg-blue-600 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all text-sm whitespace-nowrap"><i data-lucide="anchor" class="w-4 h-4"></i> Minerar</button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all text-sm whitespace-nowrap"><i data-lucide="wallet" class="w-4 h-4"></i> Carteira</button>
+            <button onclick="switchTab('bank')" id="tab-bank" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all text-sm whitespace-nowrap"><i data-lucide="arrow-right-left" class="w-4 h-4"></i> Trade</button>
+            <button onclick="switchTab('market')" id="tab-market" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all text-sm whitespace-nowrap"><i data-lucide="users" class="w-4 h-4"></i> P2P</button>
+            <button onclick="switchTab('ranking')" id="tab-ranking" class="tab-btn flex-1 min-w-[100px] bg-slate-800 text-slate-400 p-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-transparent transition-all text-sm whitespace-nowrap"><i data-lucide="trophy" class="w-4 h-4"></i> Top</button>
         </div>
 
-        <main class="px-4 pb-20">
+        <main class="pb-20">
             <!-- FISHING -->
             <section id="view-fishing" class="animate-float">
                 <div id="fishing-bg" class="relative bg-slate-900 border border-slate-800 rounded-2xl h-80 flex flex-col items-center justify-center overflow-hidden shadow-2xl p-6 transition-colors duration-1000">
@@ -130,23 +134,23 @@
                     
                     <div id="fishing-idle" class="relative z-10 text-center w-full max-w-xs">
                         <div class="text-6xl mb-4 animate-bounce">⚓</div>
-                        <h2 class="text-xl font-bold text-white mb-1">Mineração Oceânica</h2>
-                        <p class="text-xs text-slate-400 mb-6">Explore blocos de água profunda para encontrar ativos raros.</p>
+                        <h2 class="text-xl font-bold text-white mb-1">Deep Sea Mining</h2>
+                        <p class="text-xs text-slate-400 mb-6">Minere blocos para encontrar FishCoins.</p>
                         
                         <div class="bg-black/40 p-3 rounded-lg mb-4 border border-slate-700 flex justify-between items-center backdrop-blur-sm">
                             <span class="text-xs text-slate-400">Gas Fee (Custo):</span>
-                            <span id="current-fish-cost" class="text-red-400 font-mono font-bold">-$20</span>
+                            <span id="current-fish-cost" class="text-red-400 font-mono font-bold">-20 FISH</span>
                         </div>
 
                         <button onclick="startFishing()" id="btn-fish" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-500/20 transition-all active:scale-95 border-t border-blue-400">
-                            INICIAR MINERAÇÃO
+                            MINERAR BLOCO
                         </button>
                     </div>
 
                     <div id="fishing-loading" class="hidden relative z-10 text-center">
                         <div class="loader mx-auto mb-4 w-16 h-16 border-4"></div>
-                        <p class="text-blue-300 font-mono animate-pulse text-sm">Validando Hash do Bloco...</p>
-                        <p class="text-[10px] text-slate-500 mt-2">Isso pode levar alguns segundos.</p>
+                        <p class="text-blue-300 font-mono animate-pulse text-sm">Validando Hash...</p>
+                        <p class="text-[10px] text-slate-500 mt-2">Proof of Fish (PoF)</p>
                     </div>
 
                     <div id="fishing-result" class="hidden relative z-10 text-center w-full max-w-sm animate-float">
@@ -160,8 +164,8 @@
                                 <div id="caught-weight" class="text-yellow-400 font-mono font-bold text-lg">0kg</div>
                             </div>
                             <div class="bg-slate-800/80 p-2 rounded border border-slate-700">
-                                <div class="text-[8px] uppercase text-slate-500 font-bold">Valor Atual</div>
-                                <div id="caught-val" class="text-green-400 font-mono font-bold text-lg">$0</div>
+                                <div class="text-[8px] uppercase text-slate-500 font-bold">Valor Base</div>
+                                <div id="caught-val" class="text-green-400 font-mono font-bold text-lg">0 FISH</div>
                             </div>
                         </div>
                         <button onclick="resetFishing()" class="bg-slate-700 hover:bg-slate-600 text-white py-3 px-6 rounded-lg font-bold w-full border border-slate-600">Continuar</button>
@@ -172,12 +176,10 @@
             <!-- INVENTORY -->
             <section id="view-inventory" class="hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200"><i data-lucide="wallet"></i> Seus Ativos</h2>
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200"><i data-lucide="wallet"></i> Seus NFTs</h2>
                     <span class="text-xs font-mono bg-slate-800 px-3 py-1 rounded-full text-slate-400 border border-slate-700">Total: <span id="inventory-count" class="text-white font-bold">0</span></span>
                 </div>
-                <div id="inventory-grid" class="grid grid-cols-1 gap-3 pb-10">
-                    <!-- Cards will be populated dynamically -->
-                </div>
+                <div id="inventory-grid" class="grid grid-cols-1 gap-3 pb-10"></div>
                 <div id="inventory-empty" class="hidden text-center py-20 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl bg-slate-900/50">
                     <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
                     <p>Carteira Vazia.</p>
@@ -185,16 +187,81 @@
                 </div>
             </section>
 
-            <!-- MARKET -->
+            <!-- MARKET P2P -->
             <section id="view-market" class="hidden">
                 <div class="bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 p-6 rounded-xl mb-6 text-center shadow-lg">
-                    <h2 class="text-xl font-bold text-white mb-1">Exchange P2P</h2>
-                    <p class="text-slate-400 text-xs">Compre e venda ativos com outros traders em tempo real.</p>
+                    <h2 class="text-xl font-bold text-white mb-1">Mercado P2P</h2>
+                    <p class="text-slate-400 text-xs">Negocie NFTs diretamente em FISH.</p>
                 </div>
                 <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-10"></div>
                 <div id="market-empty" class="hidden text-center py-20 text-slate-500 bg-slate-900/50 rounded-xl border border-slate-800">
                     <i data-lucide="store" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
                     <p>O livro de ofertas está vazio.</p>
+                </div>
+            </section>
+
+            <!-- BANK / EXCHANGE (NEW) -->
+            <section id="view-bank" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <!-- CHART -->
+                    <div class="md:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2"><i data-lucide="activity"></i> FISH / BRL</h3>
+                            <span class="text-xs bg-slate-800 text-yellow-400 px-2 py-1 rounded border border-slate-700 font-mono live-price-indicator">R$ 0.0500</span>
+                        </div>
+                        <div class="h-48 w-full relative">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- TRADE BOX -->
+                    <div class="bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700 p-5 rounded-xl shadow-lg flex flex-col justify-center">
+                        <!-- TABS COMPRAR / VENDER -->
+                        <div class="flex bg-black/40 rounded-lg p-1 mb-4">
+                            <button onclick="setTradeMode('buy')" id="btn-trade-buy" class="flex-1 py-1.5 rounded text-xs font-bold text-white bg-green-600 shadow transition-all">COMPRAR</button>
+                            <button onclick="setTradeMode('sell')" id="btn-trade-sell" class="flex-1 py-1.5 rounded text-xs font-bold text-slate-400 hover:text-white transition-all">VENDER</button>
+                        </div>
+
+                        <!-- INPUTS -->
+                        <div class="space-y-4">
+                            <div class="bg-black/20 p-3 rounded-lg border border-slate-600">
+                                <label class="text-[10px] text-slate-400 block mb-1" id="trade-label-top">Pagar (BRL)</label>
+                                <input type="number" id="trade-amount" class="w-full bg-transparent text-white font-mono text-xl outline-none" placeholder="0.00" oninput="calculateTrade()">
+                            </div>
+
+                            <div class="text-center text-slate-500"><i data-lucide="arrow-down" class="w-4 h-4 mx-auto"></i></div>
+
+                            <div class="bg-black/20 p-3 rounded-lg border border-slate-600">
+                                <label class="text-[10px] text-slate-400 block mb-1" id="trade-label-bottom">Receber (FISH)</label>
+                                <div id="trade-result" class="text-cyan-400 font-mono text-xl font-bold">0 FISH</div>
+                            </div>
+                        </div>
+
+                        <button onclick="executeTrade()" id="btn-trade-action" class="w-full mt-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all">
+                            COMPRAR FISH
+                        </button>
+                        <p class="text-[9px] text-center text-slate-500 mt-2">Taxa da Corretora: 1%</p>
+                    </div>
+                </div>
+
+                <!-- STATS -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-500 uppercase">Market Cap</div>
+                        <div class="font-mono text-slate-200 font-bold">R$ 142K</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-500 uppercase">Vol 24h</div>
+                        <div class="font-mono text-slate-200 font-bold">R$ 89K</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-500 uppercase">Supply</div>
+                        <div class="font-mono text-slate-200 font-bold">2.1B FISH</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-500 uppercase">Holders</div>
+                        <div class="font-mono text-slate-200 font-bold">12.4K</div>
+                    </div>
                 </div>
             </section>
 
@@ -238,21 +305,25 @@
 
         // --- GLOBAL STATE ---
         let currentUser = null;
-        let userData = { balance: 0, inventory: [], incomeRate: 0 };
+        let userData = { balance: 0, balanceBRL: 0, inventory: [], incomeRate: 0 };
         let accumulatedIncome = 0; 
         let activeTab = 'fishing';
-        window.itemsCache = {}; // Cache global acessível
+        let tradeMode = 'buy'; // 'buy' or 'sell'
+        window.itemsCache = {}; 
         
         // ECONOMY STATE
         let marketState = {
             trend: 'NEUTRAL',
             multiplier: 1.0,
             inflation: 1.0,
-            hypeTag: 'Alpha' // Default start
+            hypeTag: 'Alpha',
+            priceBRL: 0.05, // PREÇO INICIAL BAIXO (5 centavos)
+            history: [] // Para o gráfico
         };
 
         const BASE_BAIT_COST = 20;
-        
+        let priceChart = null;
+
         // --- DATA ---
         const NAME_PARTS = {
             PREFIX: ["Alpha", "Beta", "Gamma", "Omega", "Neon", "Cyber", "Quantum", "Void", "Solar", "Lunar", "Meta", "Crypto", "Hash", "Block", "Chain", "Ether", "Satoshi", "Bull", "Bear", "Prime", "Giga", "Tera", "Nano", "Pico"],
@@ -262,19 +333,31 @@
         const EMOJIS = ['🐡', '🐠', '🐟', '🦈', '🐳', '🐋', '🐬', '🦑', '🐙', '🦞', '🦀', '🦐', '🐚', '🐌', '🦕', '🐊'];
 
         // --- ECONOMY ENGINE ---
-        updateEconomy(); // Run immediately
-        setInterval(updateEconomy, 1000);
+        // Inicializar histórico
+        for(let i=0; i<20; i++) marketState.history.push(0.05);
+
+        setInterval(updateEconomy, 2000); // Atualiza mercado a cada 2s para gráfico vivo
 
         function updateEconomy() {
             const now = Date.now();
-            const cycleDuration = 300000; // 5 min cycle
+            const cycleDuration = 300000; 
             const phase = (now % cycleDuration) / cycleDuration;
-            
             const hypeIndex = Math.floor(now / cycleDuration) % NAME_PARTS.PREFIX.length;
             marketState.hypeTag = NAME_PARTS.PREFIX[hypeIndex];
 
+            // Trend Logic
             let rawTrend = Math.sin(phase * Math.PI * 2);
             
+            // Random Walk para Preço em BRL (Alta Volatilidade de centavos)
+            const volatility = 0.05; // 5% variação
+            const change = (Math.random() - 0.5) * volatility;
+            marketState.priceBRL = Math.max(0.001, marketState.priceBRL * (1 + change + (rawTrend * 0.02)));
+            
+            // Atualizar histórico gráfico
+            marketState.history.push(marketState.priceBRL);
+            if(marketState.history.length > 30) marketState.history.shift();
+
+            // Set global trends based on BRL movement roughly
             if (rawTrend > 0.2) {
                 marketState.trend = 'BULL';
                 marketState.multiplier = 1.0 + (rawTrend * 0.5);
@@ -290,21 +373,72 @@
             }
 
             updateUIEconomy();
+            updateChart();
             if (activeTab === 'inventory') renderInventory(); 
+            if (activeTab === 'bank') calculateTrade();
         }
 
-        // --- MATH FUNCTIONS (SAFE) ---
+        // --- CHART JS ---
+        function initChart() {
+            const canvas = document.getElementById('priceChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            if (priceChart) priceChart.destroy(); 
+
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(30).fill(''),
+                    datasets: [{
+                        label: 'FISH/BRL',
+                        data: marketState.history,
+                        borderColor: '#facc15', // Yellow for "Gold/Coin" vibe
+                        backgroundColor: 'rgba(250, 204, 21, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            display: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: function(value) { return 'R$ ' + value.toFixed(4); } }
+                        }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        function updateChart() {
+            if(!priceChart) return;
+            priceChart.data.datasets[0].data = marketState.history;
+            // Cor muda se subiu ou caiu
+            const start = marketState.history[0];
+            const end = marketState.history[marketState.history.length-1];
+            const color = end >= start ? '#4ade80' : '#f87171'; // Green or Red
+            const bg = end >= start ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)';
+            
+            priceChart.data.datasets[0].borderColor = color;
+            priceChart.data.datasets[0].backgroundColor = bg;
+            priceChart.update();
+        }
+
+        // --- MATH ---
         function getCurrentFishValue(fish) {
-            // Safety Check
             const weight = parseFloat(fish.weight) || 1;
-            
             let val = weight * 2 * marketState.multiplier;
-            
-            // Volatility Deterministic Noise
             const idInt = fish.id ? parseInt(fish.id.slice(-4), 16) : 0;
             const timeBlock = Math.floor(Date.now() / 5000);
             const noise = (idInt + timeBlock) % 20 - 10;
-            
             val = val + noise;
             return Math.max(1, Math.floor(val));
         }
@@ -312,14 +446,10 @@
         function getCurrentIncome(fish) {
             const weight = parseFloat(fish.weight) || 1;
             let income = weight * 0.1;
-            
-            if (fish.name && fish.name.includes(marketState.hypeTag)) {
-                income *= 2;
-            }
+            if (fish.name && fish.name.includes(marketState.hypeTag)) income *= 2;
             if (marketState.trend === 'BEAR') income *= 0.8;
             if (marketState.trend === 'BULL') income *= 1.2;
-            
-            return Math.max(0.1, parseFloat(income.toFixed(2))); // Min income 0.1
+            return Math.max(0.1, parseFloat(income.toFixed(2)));
         }
 
         function updateUIEconomy() {
@@ -328,36 +458,48 @@
             const hypeEl = document.getElementById('hype-tag');
             const tickerEl = document.getElementById('market-ticker-content');
             const fishCostEl = document.getElementById('current-fish-cost');
-            const bgEl = document.getElementById('fishing-bg');
+            const priceDisplayEl = document.getElementById('fish-price-display');
+            const livePriceEls = document.querySelectorAll('.live-price-indicator');
 
             const currentCost = Math.floor(BASE_BAIT_COST * marketState.inflation);
-            if (fishCostEl) fishCostEl.textContent = `-$${currentCost}`;
+            if (fishCostEl) fishCostEl.textContent = `-${currentCost} FISH`;
+
+            const priceFmt = `R$ ${marketState.priceBRL.toFixed(4)}`; // 4 casas decimais para shitcoin
+            
+            if(priceDisplayEl) {
+                priceDisplayEl.innerHTML = `<span>1 FISH</span> <span class="${marketState.trend==='BULL'?'text-green-400':'text-red-400'} font-bold">${priceFmt}</span>`;
+            }
+            
+            livePriceEls.forEach(el => el.textContent = priceFmt);
 
             // Ticker
             let trendIcon = marketState.trend === 'BULL' ? '🚀' : (marketState.trend === 'BEAR' ? '🔻' : '➡️');
             let trendColor = marketState.trend === 'BULL' ? 'text-green-400' : (marketState.trend === 'BEAR' ? 'text-red-400' : 'text-slate-400');
             
-            tickerEl.innerHTML = `
-                <span class="${trendColor}">MARKET: ${marketState.trend} ${trendIcon}</span>
-                <span>FISHCOIN: $${(marketState.multiplier * 100).toFixed(2)}</span>
-                <span class="text-purple-400">HYPE: ${marketState.hypeTag} 🔥</span>
-                <span class="text-yellow-400">GAS: $${currentCost} ⛽</span>
-                <span>INFLATION: ${((marketState.inflation - 1) * 100).toFixed(0)}%</span>
-            `;
+            if (tickerEl) {
+                tickerEl.innerHTML = `
+                    <span class="${trendColor}">MARKET: ${marketState.trend} ${trendIcon}</span>
+                    <span>FISH/BRL: ${priceFmt}</span>
+                    <span class="text-purple-400">HYPE: ${marketState.hypeTag} 🔥</span>
+                    <span class="text-yellow-400">GAS: ${currentCost} FISH ⛽</span>
+                    <span>INFLATION: ${((marketState.inflation - 1) * 100).toFixed(0)}%</span>
+                `;
+            }
 
-            statusEl.innerHTML = `<span class="text-[9px] text-slate-500 mr-2">MERCADO</span> <span class="${trendColor} font-bold">${marketState.trend}</span>`;
-            gasEl.innerHTML = `<span class="text-[9px] text-slate-500 mr-2">GAS</span> <span class="text-yellow-400 font-bold">$${currentCost}</span>`;
-            hypeEl.innerHTML = `<span class="text-[9px] text-purple-400 mr-2">HYPE</span> <span class="text-white font-bold animate-pulse">${marketState.hypeTag}</span>`;
+            if (statusEl) statusEl.innerHTML = `<span class="text-[9px] text-slate-500 mr-2">MERCADO</span> <span class="${trendColor} font-bold">${marketState.trend}</span>`;
+            if (gasEl) gasEl.innerHTML = `<span class="text-[9px] text-slate-500 mr-2">GAS</span> <span class="text-yellow-400 font-bold">${currentCost}</span>`;
+            if (hypeEl) hypeEl.innerHTML = `<span class="text-[9px] text-purple-400 mr-2">HYPE</span> <span class="text-white font-bold animate-pulse">${marketState.hypeTag}</span>`;
 
+            const bgEl = document.getElementById('fishing-bg');
             if (bgEl) {
                 const bgClass = marketState.trend === 'BULL' ? 'bg-emerald-950/30' : (marketState.trend === 'BEAR' ? 'bg-red-950/30' : 'bg-slate-900');
-                if (!bgEl.className.includes(bgClass)) { // Avoid constant DOM refresh
+                if (!bgEl.className.includes(bgClass)) { 
                      bgEl.className = `relative border border-slate-800 rounded-2xl h-80 flex flex-col items-center justify-center overflow-hidden shadow-2xl p-6 transition-all duration-1000 ${bgClass}`;
                 }
             }
         }
 
-        // --- AUTH & DATA SYNC ---
+        // --- AUTH ---
         window.toggleAuthMode = (mode) => {
             const isLogin = mode === 'login';
             document.getElementById('field-username').style.display = isLogin ? 'none' : 'block';
@@ -385,7 +527,7 @@
                     const cred = await createUserWithEmailAndPassword(auth, email, password);
                     await updateProfile(cred.user, { displayName: username });
                     await setDoc(doc(db, 'users', cred.user.uid), {
-                        username, balance: 100, inventory: [], createdAt: serverTimestamp()
+                        username, balance: 1000, balanceBRL: 0, inventory: [], createdAt: serverTimestamp()
                     });
                 } else {
                     await signInWithEmailAndPassword(auth, email, password);
@@ -419,10 +561,9 @@
                     if (s.exists()) {
                         const d = s.data();
                         let safeInventory = d.inventory || [];
-                        
-                        // --- AUTO-CURA (DATA MIGRATION) ---
-                        // Se peixes antigos não tiverem peso ou ID, consertar agora.
                         let needsRepair = false;
+                        
+                        // Auto-repair inventory
                         safeInventory = safeInventory.map(f => {
                             if (!f.weight || !f.id) {
                                 needsRepair = true;
@@ -437,16 +578,24 @@
                             return f;
                         });
 
+                        // Ensure balanceBRL exists
+                        let newBRL = d.balanceBRL;
+                        if (newBRL === undefined) {
+                            newBRL = 0;
+                            needsRepair = true;
+                        }
+
                         if (needsRepair) {
-                            console.log("🛠️ Inventário reparado! Salvando correções...");
-                            updateDoc(doc(db, 'users', user.uid), { inventory: safeInventory });
+                            updateDoc(doc(db, 'users', user.uid), { inventory: safeInventory, balanceBRL: newBRL });
                         }
                         
-                        userData = { ...d, inventory: safeInventory };
+                        userData = { ...d, inventory: safeInventory, balanceBRL: newBRL };
                         updateUI();
                         if (activeTab === 'inventory') renderInventory();
+                        if (activeTab === 'bank') calculateTrade(); // Update wallet view in bank
                     } else {
-                        setDoc(doc(db, 'users', user.uid), { username: user.displayName, balance: 100, inventory: [] });
+                        // Init new user with more FISH due to low value
+                        setDoc(doc(db, 'users', user.uid), { username: user.displayName, balance: 1000, balanceBRL: 0, inventory: [] });
                     }
                 });
 
@@ -455,6 +604,7 @@
                 });
 
                 startIncomeLoop();
+                setTimeout(initChart, 500); // Init chart after load
             } else {
                 currentUser = null;
                 accumulatedIncome = 0;
@@ -473,7 +623,8 @@
 
             window.incomeInt = setInterval(() => {
                 if (!userData.inventory.length) {
-                    document.getElementById('user-income').textContent = "0.00";
+                    const incomeEl = document.getElementById('user-income');
+                    if (incomeEl) incomeEl.textContent = "0.00";
                     return;
                 }
                 
@@ -483,7 +634,8 @@
                     if (!isNaN(inc)) currentRate += inc;
                 });
                 
-                document.getElementById('user-income').textContent = currentRate.toFixed(2);
+                const incomeEl = document.getElementById('user-income');
+                if (incomeEl) incomeEl.textContent = currentRate.toFixed(2);
                 
                 if (currentRate > 0) {
                     accumulatedIncome += currentRate;
@@ -506,7 +658,14 @@
         function updateUI() {
             const total = (userData.balance || 0) + accumulatedIncome;
             const balEl = document.getElementById('user-balance');
+            const brlEl = document.getElementById('user-balance-brl');
+            
             if (balEl) balEl.textContent = Math.floor(total).toLocaleString('pt-BR');
+            if (brlEl && userData.balanceBRL !== undefined) {
+                // Show Real Holding Balance + Est Value of Fish?
+                // Actually, let's show the Holding Balance (BRL) explicitly
+                brlEl.textContent = userData.balanceBRL.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            }
             
             const invEl = document.getElementById('inventory-count');
             if (invEl) invEl.textContent = userData.inventory.length;
@@ -525,13 +684,124 @@
             }
         }
 
+        // --- BANK / EXCHANGE LOGIC ---
+        window.setTradeMode = (mode) => {
+            tradeMode = mode;
+            const btnBuy = document.getElementById('btn-trade-buy');
+            const btnSell = document.getElementById('btn-trade-sell');
+            const labelTop = document.getElementById('trade-label-top');
+            const labelBot = document.getElementById('trade-label-bottom');
+            const btnAction = document.getElementById('btn-trade-action');
+            const resultColor = document.getElementById('trade-result');
+
+            if (mode === 'buy') {
+                btnBuy.className = 'flex-1 py-1.5 rounded text-xs font-bold text-white bg-green-600 shadow transition-all';
+                btnSell.className = 'flex-1 py-1.5 rounded text-xs font-bold text-slate-400 hover:text-white transition-all';
+                labelTop.textContent = `Pagar (BRL) - Saldo: R$ ${userData.balanceBRL.toFixed(2)}`;
+                labelBot.textContent = 'Receber (FISH)';
+                btnAction.textContent = 'COMPRAR FISH';
+                btnAction.className = 'w-full mt-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all';
+                resultColor.className = 'text-cyan-400 font-mono text-xl font-bold';
+            } else {
+                btnSell.className = 'flex-1 py-1.5 rounded text-xs font-bold text-white bg-red-600 shadow transition-all';
+                btnBuy.className = 'flex-1 py-1.5 rounded text-xs font-bold text-slate-400 hover:text-white transition-all';
+                const totalFish = (userData.balance || 0) + accumulatedIncome;
+                labelTop.textContent = `Vender (FISH) - Saldo: ${Math.floor(totalFish)}`;
+                labelBot.textContent = 'Receber (BRL)';
+                btnAction.textContent = 'VENDER FISH';
+                btnAction.className = 'w-full mt-4 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all';
+                resultColor.className = 'text-green-400 font-mono text-xl font-bold';
+            }
+            calculateTrade();
+        }
+
+        window.calculateTrade = () => {
+            const input = document.getElementById('trade-amount');
+            const result = document.getElementById('trade-result');
+            const val = parseFloat(input.value);
+            
+            if (!val || val <= 0) {
+                result.textContent = tradeMode === 'buy' ? '0 FISH' : 'R$ 0,00';
+                return;
+            }
+            
+            if (tradeMode === 'buy') {
+                // BRL -> FISH
+                // Price is BRL per 1 FISH. e.g. 0.05
+                // Amt / Price = FISH
+                const fishAmt = (val / marketState.priceBRL) * 0.99; // 1% fee
+                result.textContent = `${Math.floor(fishAmt)} FISH`;
+            } else {
+                // FISH -> BRL
+                const brlAmt = (val * marketState.priceBRL) * 0.99; // 1% fee
+                result.textContent = brlAmt.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+        }
+
+        window.executeTrade = async () => {
+            const input = document.getElementById('trade-amount');
+            const amount = parseFloat(input.value);
+            
+            if (!amount || amount <= 0) return showModal('Erro', 'Valor inválido.');
+
+            // Force sync pending income before trade
+            if (accumulatedIncome > 0) {
+                await updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(accumulatedIncome) });
+                accumulatedIncome = 0;
+            }
+
+            // Refresh user data from doc logic implicitly via realtime listener, 
+            // but for transaction safety we use runTransaction.
+
+            try {
+                await runTransaction(db, async (t) => {
+                    const ref = doc(db, 'users', currentUser.uid);
+                    const docSnap = await t.get(ref);
+                    const data = docSnap.data();
+                    const currentBRL = data.balanceBRL || 0;
+                    const currentFISH = data.balance || 0;
+
+                    if (tradeMode === 'buy') {
+                        // Buying FISH with BRL
+                        if (currentBRL < amount) throw "Saldo em Reais insuficiente!";
+                        
+                        const fishReceived = Math.floor((amount / marketState.priceBRL) * 0.99);
+                        
+                        t.update(ref, {
+                            balanceBRL: increment(-amount),
+                            balance: increment(fishReceived)
+                        });
+                        return `Comprou ${fishReceived} FISH`;
+                    } else {
+                        // Selling FISH for BRL
+                        if (currentFISH < amount) throw "Saldo em FISH insuficiente!";
+                        
+                        const brlReceived = (amount * marketState.priceBRL) * 0.99;
+                        
+                        t.update(ref, {
+                            balance: increment(-amount),
+                            balanceBRL: increment(brlReceived)
+                        });
+                        return `Vendeu por ${brlReceived.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                    }
+                });
+
+                input.value = '';
+                calculateTrade();
+                showModal('Sucesso!', 'Transação confirmada na blockchain.');
+
+            } catch (e) {
+                showModal('Erro', 'Falha na transação: ' + e);
+            }
+        }
+
         // --- FISHING ---
         window.startFishing = async () => {
             const cost = Math.floor(BASE_BAIT_COST * marketState.inflation);
             const totalMoney = (userData.balance || 0) + accumulatedIncome;
 
             if (totalMoney < cost) {
-                return showModal('Aviso', `<p class="text-center">Sem saldo para o Gas Fee de <span class="text-red-400 font-bold">$${cost}</span>.</p>`);
+                return showModal('Aviso', `<p class="text-center">Sem saldo para o Gas Fee de <span class="text-red-400 font-bold">${cost} FISH</span>.</p>`);
             }
 
             document.getElementById('fishing-idle').classList.add('hidden');
@@ -566,7 +836,7 @@
                     document.getElementById('caught-weight').textContent = `${newFish.weight}kg`;
                     
                     const val = getCurrentFishValue(newFish);
-                    document.getElementById('caught-val').textContent = `$${val}`;
+                    document.getElementById('caught-val').textContent = `${val} FISH`;
                     
                     res.classList.remove('hidden');
                 }, 1000);
@@ -613,13 +883,10 @@
             }
             document.getElementById('inventory-empty').classList.add('hidden');
 
-            // Ordena pelo peso (mais raros em cima)
             const sorted = [...userData.inventory].sort((a,b) => (b.weight || 0) - (a.weight || 0));
 
             grid.innerHTML = sorted.map(fish => {
-                // Safety check
                 if (!fish.id || !fish.name) return ''; 
-                
                 window.itemsCache[fish.id] = fish;
                 
                 const currentVal = getCurrentFishValue(fish);
@@ -641,12 +908,12 @@
                             <span class="text-slate-400 font-bold">• ${fish.weight}kg</span>
                         </div>
                         <div class="flex gap-2 mt-1.5">
-                            <span class="text-[9px] bg-slate-950 px-2 py-0.5 rounded text-yellow-400 border border-slate-800 font-mono">APY +$${currentIncome}/s</span>
+                            <span class="text-[9px] bg-slate-950 px-2 py-0.5 rounded text-yellow-400 border border-slate-800 font-mono">APY +${currentIncome} FISH/s</span>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1 w-24">
                         <button onclick="window.askSell('${fish.id}')" class="bg-green-900/10 hover:bg-green-900/30 border border-green-900/30 text-green-400 text-xs py-1.5 rounded transition-all font-mono font-bold">
-                            Vender $${currentVal}
+                            Vender ${currentVal}
                         </button>
                         <button onclick="window.askList('${fish.id}')" class="bg-blue-900/10 hover:bg-blue-900/30 border border-blue-900/30 text-blue-400 text-[10px] py-1.5 rounded transition-all">
                             P2P
@@ -671,7 +938,7 @@
                     
                     <div class="bg-green-900/20 p-4 rounded-xl border border-green-900/50 mb-4">
                         <div class="text-xs text-green-300 mb-1 uppercase tracking-widest">Valor de Liquidez</div>
-                        <div class="text-4xl font-mono text-green-400 font-bold">$${livePrice}</div>
+                        <div class="text-4xl font-mono text-green-400 font-bold">${livePrice} FISH</div>
                     </div>
                     
                     <div class="text-[10px] text-slate-500">Taxa de Rede: 0% • Execução Instantânea</div>
@@ -717,9 +984,9 @@
                             <div class="text-xs text-slate-500">${fish.weight}kg</div>
                         </div>
                     </div>
-                    <div class="text-xs text-slate-400 mb-1 font-bold">Preço de Venda ($)</div>
+                    <div class="text-xs text-slate-400 mb-1 font-bold">Preço de Venda (FISH)</div>
                     <input type="number" id="p2p-price" class="w-full bg-slate-800 border border-slate-600 rounded p-3 text-white font-mono text-lg focus:border-blue-500 outline-none" value="${suggested}">
-                    <p class="text-[10px] text-slate-500 mt-2">Sugestão de mercado: $${suggested}</p>
+                    <p class="text-[10px] text-slate-500 mt-2">Sugestão de mercado: ${suggested} FISH</p>
                 </div>
                 <button id="modal-confirm-action" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all">CRIAR ORDEM</button>
             `);
@@ -754,7 +1021,6 @@
             document.getElementById('market-empty').classList.add('hidden');
 
             grid.innerHTML = items.map(item => {
-                // Ignore bad items
                 if (!item.id || !item.name) return '';
 
                 window.itemsCache[item.id] = item; 
@@ -776,7 +1042,7 @@
                     </div>
                     <div class="bg-black/30 p-2 rounded flex justify-between items-center border border-slate-800/50">
                         <span class="text-[10px] text-slate-400">ASK PRICE</span>
-                        <span class="text-green-400 font-mono font-bold">$${item.price}</span>
+                        <span class="text-green-400 font-mono font-bold">${item.price} FISH</span>
                     </div>
                     <button onclick="window.buyFish('${item.id}', '${item.marketDocId}')" class="w-full py-2 rounded text-xs font-bold transition-all ${isMine ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700' : 'bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-900/20'}">
                         ${isMine ? 'CANCELAR ORDEM' : 'COMPRAR ATIVO'}
@@ -855,7 +1121,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="font-bold text-sm text-slate-200 truncate">${u.username}</div>
                             </div>
-                            <div class="font-mono text-green-400 font-bold text-sm">$${Math.floor(u.balance).toLocaleString()}</div>
+                            <div class="font-mono text-green-400 font-bold text-sm">${Math.floor(u.balance).toLocaleString()} FISH</div>
                         </div>
                     `;
                 });
@@ -866,7 +1132,7 @@
         // --- UI UTILS ---
         window.switchTab = (t) => {
             activeTab = t;
-            ['fishing', 'inventory', 'market', 'ranking'].forEach(x => {
+            ['fishing', 'inventory', 'market', 'ranking', 'bank'].forEach(x => {
                 const btn = document.getElementById(`tab-${x}`);
                 const view = document.getElementById(`view-${x}`);
                 if(x === t) {
@@ -881,6 +1147,10 @@
             });
             if(t === 'ranking') loadRanking();
             if(t === 'inventory') renderInventory();
+            if(t === 'bank') {
+                setTradeMode('buy');
+                setTimeout(() => { if(priceChart) priceChart.resize(); }, 100);
+            }
         };
 
         window.showModal = (title, content) => {
