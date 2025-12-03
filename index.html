@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoFish Tycoon - Portal Arcano</title>
+    <!-- Tailwind CSS (Estilos bonitos sem esforço) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Configuração de Animações Customizadas -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Animações */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+        }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+
+        .fish-card:hover { transform: translateY(-5px); }
+        
+        /* Scrollbar escondida mas funcional */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Loader */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Animação de dinheiro subindo */
+        @keyframes money-up {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        .money-popup {
+            position: absolute;
+            color: #4ade80;
+            font-weight: bold;
+            font-size: 0.8rem;
+            animation: money-up 1s forwards;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-blue-500 selection:text-white pb-20">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[url('https://i.ibb.co/pFphJp3/Gemini-Generated-Image-zegmnjzegmnjzegm.png')] bg-cover bg-center">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        
+        <div class="relative bg-slate-900/90 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md m-4">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-black bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent mb-2">CRYPTO FISH</h1>
+                <p class="text-slate-400">Portal Arcano Tycoon</p>
+            </div>
+
+            <div class="flex bg-slate-800 rounded-lg p-1 mb-6">
+                <button onclick="toggleAuthMode('login')" id="btn-mode-login" class="flex-1 py-2 rounded font-bold text-sm bg-blue-600 text-white transition-all">Entrar</button>
+                <button onclick="toggleAuthMode('signup')" id="btn-mode-signup" class="flex-1 py-2 rounded font-bold text-sm text-slate-400 hover:text-white transition-all">Criar Conta</button>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="field-username" class="hidden">
+                    <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Nome de Pescador</label>
+                    <input type="text" id="input-username" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 focus:border-blue-500 outline-none text-white transition-colors" placeholder="Capitão Nemo">
+                </div>
+                
+                <div>
+                    <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Email</label>
+                    <input type="email" id="input-email" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 focus:border-blue-500 outline-none text-white transition-colors" placeholder="pescador@exemplo.com">
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Senha</label>
+                    <input type="password" id="input-password" required minlength="6" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 focus:border-blue-500 outline-none text-white transition-colors" placeholder="******">
+                </div>
+
+                <div id="auth-error" class="text-red-400 text-xs text-center hidden p-2 bg-red-900/20 rounded border border-red-900/50"></div>
+
+                <button type="submit" id="btn-auth-submit" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-900/50 transition-all active:scale-95 flex justify-center items-center gap-2">
+                    <span>Entrar no Barco</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- GAME UI (Hidden by default) -->
+    <div id="game-ui" class="hidden max-w-4xl mx-auto">
+        
+        <!-- HEADER -->
+        <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 p-4 shadow-lg mb-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-lg border-2 border-slate-800 shadow-xl">U</div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Saldo</div>
+                        <div class="font-mono text-xl text-green-400 font-bold flex items-center gap-1 drop-shadow-sm relative">
+                            <i data-lucide="coins" class="w-4 h-4"></i> $<span id="user-balance">0</span>
+                            <div id="income-popups" class="absolute top-0 right-0 w-full h-full pointer-events-none"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col items-end">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Renda Passiva</div>
+                    <div class="font-mono text-base text-yellow-400 font-bold flex items-center gap-1">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i> +$<span id="user-income">0</span>/s
+                    </div>
+                </div>
+                
+                <button onclick="handleLogout()" class="ml-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white hover:bg-red-900/50 hover:text-red-200 transition-colors" title="Salvar e Sair">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <div class="px-4 mb-6 flex gap-2 overflow-x-auto scrollbar-hide">
+            <button onclick="switchTab('fishing')" id="tab-fishing" class="tab-btn flex-1 min-w-[120px] bg-blue-600 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all transform scale-105 border border-blue-500">
+                <i data-lucide="anchor" class="w-5 h-5"></i> Pescaria
+            </button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex-1 min-w-[120px] bg-slate-800 text-slate-400 hover:bg-slate-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-transparent">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i> Tanque
+            </button>
+            <button onclick="switchTab('market')" id="tab-market" class="tab-btn flex-1 min-w-[120px] bg-slate-800 text-slate-400 hover:bg-slate-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-transparent">
+                <i data-lucide="store" class="w-5 h-5"></i> Mercado
+            </button>
+        </div>
+
+        <main class="px-4 pb-20">
+            
+            <!-- SECTION: FISHING -->
+            <section id="view-fishing" class="animate-float">
+                <div class="relative bg-gradient-to-b from-slate-900 to-blue-950 border border-blue-900/50 rounded-2xl h-96 flex flex-col items-center justify-center overflow-hidden shadow-2xl p-6">
+                    <!-- Background Effects -->
+                    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-400 to-transparent"></div>
+                    
+                    <!-- Content -->
+                    <div id="fishing-idle" class="relative z-10 text-center">
+                        <div class="text-7xl mb-4 filter drop-shadow-lg">🎣</div>
+                        <h2 class="text-2xl font-bold text-blue-100 mb-2">Águas Profundas</h2>
+                        <div class="inline-flex items-center gap-2 bg-slate-950/50 px-4 py-2 rounded-full border border-blue-900 mb-6">
+                            <span class="text-slate-400 text-sm">Custo da Isca:</span>
+                            <span class="text-red-400 font-bold font-mono">-$20</span>
+                        </div>
+                        <button onclick="startFishing()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-lg py-4 px-8 rounded-full shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                            Lançar Isca
+                        </button>
+                    </div>
+
+                    <div id="fishing-loading" class="hidden relative z-10 text-center">
+                        <div class="w-24 h-24 mb-4 mx-auto text-blue-400 animate-pulse-glow rounded-full flex items-center justify-center bg-blue-500/10">
+                            <i data-lucide="waves" class="w-12 h-12"></i>
+                        </div>
+                        <p class="text-xl font-bold text-blue-200 animate-pulse">Esperando morder...</p>
+                    </div>
+
+                    <div id="fishing-result" class="hidden relative z-10 text-center w-full max-w-sm animate-float">
+                        <div id="caught-rarity-badge" class="inline-block px-3 py-1 rounded text-xs font-bold uppercase tracking-widest mb-4 bg-slate-800 border">
+                            RARIDADE
+                        </div>
+                        <div id="caught-emoji" class="text-8xl mb-2 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-transform hover:scale-110 cursor-pointer">🐟</div>
+                        <h2 id="caught-name" class="text-2xl font-black text-white mb-4 truncate">Nome do Peixe</h2>
+                        
+                        <div class="grid grid-cols-2 gap-2 mb-6">
+                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                <div class="text-[10px] text-slate-500 uppercase">Valor</div>
+                                <div id="caught-value" class="text-green-400 font-mono font-bold"></div>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                <div class="text-[10px] text-slate-500 uppercase">Renda</div>
+                                <div id="caught-income" class="text-yellow-400 font-mono font-bold"></div>
+                            </div>
+                        </div>
+
+                        <button onclick="resetFishing()" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-6 rounded-lg font-bold transition-colors w-full">
+                            Pescar Novamente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rarity Legend -->
+                <div class="grid grid-cols-5 gap-1 mt-4 text-center opacity-70">
+                    <div class="bg-slate-900/50 p-2 rounded border border-slate-800">
+                        <div class="text-xs text-slate-400 font-bold">Comum</div>
+                        <div class="text-[10px] text-slate-500">60%</div>
+                    </div>
+                    <div class="bg-blue-900/20 p-2 rounded border border-blue-900/30">
+                        <div class="text-xs text-blue-400 font-bold">Raro</div>
+                        <div class="text-[10px] text-slate-500">25%</div>
+                    </div>
+                    <div class="bg-purple-900/20 p-2 rounded border border-purple-900/30">
+                        <div class="text-xs text-purple-400 font-bold">Épico</div>
+                        <div class="text-[10px] text-slate-500">10%</div>
+                    </div>
+                    <div class="bg-yellow-900/20 p-2 rounded border border-yellow-900/30">
+                        <div class="text-xs text-yellow-400 font-bold">Lend.</div>
+                        <div class="text-[10px] text-slate-500">4.5%</div>
+                    </div>
+                    <div class="bg-pink-900/20 p-2 rounded border border-pink-900/30">
+                        <div class="text-xs text-pink-400 font-bold">Mítico</div>
+                        <div class="text-[10px] text-slate-500">0.5%</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: INVENTORY -->
+            <section id="view-inventory" class="hidden">
+                <div class="flex justify-between items-center mb-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                    <h2 class="text-xl font-bold">Seu Tanque</h2>
+                    <span class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">Total: <span id="inventory-count" class="text-white font-bold">0</span></span>
+                </div>
+                
+                <div id="inventory-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- JS vai popular aqui -->
+                </div>
+                
+                <div id="inventory-empty" class="hidden text-center py-20 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
+                    <i data-lucide="fish-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                    <p>Nenhum peixe encontrado.</p>
+                </div>
+            </section>
+
+            <!-- SECTION: MARKET -->
+            <section id="view-market" class="hidden">
+                <div class="bg-gradient-to-r from-violet-900 to-fuchsia-900 p-6 rounded-xl mb-6 relative overflow-hidden border border-fuchsia-500/30 shadow-lg">
+                    <div class="relative z-10 text-center">
+                        <h2 class="text-2xl font-bold text-white mb-1 flex items-center justify-center gap-2">
+                            <i data-lucide="globe-2"></i> Mercado Global
+                        </h2>
+                        <p class="text-fuchsia-200 text-xs">Compre peixes de outros jogadores.</p>
+                    </div>
+                </div>
+
+                <div id="market-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                     <!-- JS vai popular aqui -->
+                </div>
+                
+                <div id="market-empty" class="hidden text-center py-20 text-slate-500 bg-slate-900/50 rounded-xl border border-slate-800 border-dashed">
+                    <i data-lucide="store" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                    <p>O mercado está vazio.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL (Alerts/Confirms customizados) -->
+    <div id="modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 opacity-0 transition-opacity duration-300">
+        <div id="modal-content" class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+
+    <!-- FIREBASE MODULES -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            onAuthStateChanged,
+            updateProfile,
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            updateDoc, 
+            onSnapshot, 
+            arrayUnion, 
+            arrayRemove, 
+            increment,
+            runTransaction,
+            collection,
+            addDoc,
+            deleteDoc,
+            query,
+            orderBy,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- CONFIGURAÇÃO FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCAIQdjGBzPWulP2KQcHHmI2r3FgpTfsfg",
+            authDomain: "portalarcano-9a0fa.firebaseapp.com",
+            projectId: "portalarcano-9a0fa",
+            storageBucket: "portalarcano-9a0fa.firebasestorage.app",
+            messagingSenderId: "139414169635",
+            appId: "1:139414169635:web:31e3a9669c6c08566a2996",
+            measurementId: "G-V5SLG68Z6M"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- VARIÁVEIS GLOBAIS ---
+        let currentUser = null;
+        let userData = { balance: 0, inventory: [], incomeRate: 0 };
+        // IMPORTANT: accumulatedIncome tracks income NOT YET saved to DB
+        let accumulatedIncome = 0; 
+        let activeTab = 'fishing';
+        const APP_ID = "portal-arcano-v1";
+        const BET_AMOUNT = 20;
+
+        // Cache para evitar problemas com JSON.stringify no HTML
+        window.itemsCache = {};
+
+        // Subscription Managers (To fix bugs when re-logging)
+        let unsubUser = null;
+        let unsubMarket = null;
+
+        // --- DADOS DO JOGO ---
+        const RARITIES = {
+            COMMON: { id:'COMMON', weight: 1, label: 'Comum', color: 'text-slate-400', border: 'border-slate-600', chance: 60, income: 1, minVal: 5, maxVal: 15, emoji: ['🐟', '🐠', '🐌', '🦐'] },
+            RARE: { id:'RARE', weight: 2, label: 'Raro', color: 'text-blue-400', border: 'border-blue-500', chance: 25, income: 3, minVal: 20, maxVal: 50, emoji: ['🐡', '🦑', '🦀', '🐬'] },
+            EPIC: { id:'EPIC', weight: 3, label: 'Épico', color: 'text-purple-400', border: 'border-purple-500', chance: 10, income: 8, minVal: 80, maxVal: 150, emoji: ['🦈', '🐳', '🐙', '🐊'] },
+            LEGENDARY: { id:'LEGENDARY', weight: 4, label: 'Lendário', color: 'text-yellow-400', border: 'border-yellow-500', chance: 4.5, income: 25, minVal: 300, maxVal: 800, emoji: ['🐋', '🐉', '🧜‍♀️', '🦕'] },
+            MYTHIC: { id:'MYTHIC', weight: 5, label: 'Mítico', color: 'text-pink-500', border: 'border-pink-500', chance: 0.5, income: 100, minVal: 2000, maxVal: 5000, emoji: ['🦄', '👽', '🤖', '👑'] },
+        };
+
+        // --- GERADOR DE NOMES PT-BR ---
+        const NAMES_PREFIX = [
+            "Dourado", "Sombrio", "Radioativo", "Cibernético", "Abissal", "Elétrico", 
+            "Espectral", "Místico", "Luminoso", "Venenoso", "Antigo", "Celestial", 
+            "Infernal", "Cósmico", "Vaporoso", "Gelado", "Vulcânico", "Cristalino", 
+            "Prateado", "Titânico", "Neon", "Fantasma", "Sagrado", "Maldito",
+            "Rubro", "Noturno", "Solar", "Lunar", "Tóxico", "Etéreo", "Tempestuoso", "Nebuloso", "Arcano", "Rúnico", "Marinho", "Turbulento",
+"Férreo", "Tempestivo", "Plasmático", "Quântico", "Rochoso", "Profano",
+"Sublime", "Radiante", "Tritônico", "Coralino", "Âmbar", "Ametista",
+"Opalino", "Onírico", "Rugidor", "Sônico", "Gravitacional", "Silvestre",
+"Selvagem", "Encantado", "Fumegante", "Bravio", "Hipergélido", "Astral",
+"Esmeraldino", "Distorcido", "Escarlate", "Sombraviva", "Relampejante", "Vibrante",
+"Arcádico", "Brilhante", "Ferrugem", "Tremeluzente", "Submerso", "Carminado",
+"Vórtico", "Eólico", "Sussurrante", "Délico", "Sideral", "Marmóreo",
+"Abissônico", "Iridescente", "Flamejante", "Devorador", "Alabastro", "Saturado",
+"Carregado", "Tempestário", "Supremo", "Vagalume", "Nebulítico", "Ébano",
+"Turquesa", "Raivoso", "Gélido-Solar", "Magnético", "Diluviano", "Eternário",
+"Sombracerúleo", "Vibrátil", "Cintilante", "Pressurizado", "Glacial", "Marejado"
+        ];
+        
+        const NAMES_SUFFIX = [
+            "Nadador", "Caçador", "Escamoso", "Vagante", "Rei", "Guardião", 
+            "Devorador", "Fantasma", "Sombra", "Luz", "Besta", "Leviatã", 
+            "Oráculo", "Viajante", "Predador", "Espreitador", "Monstro", "Sentinela", 
+            "Titã", "Imperador", "Surfista", "Guerreiro", "Anjo", "Demônio",
+            "Assassino", "Vidente", "Mestre", "Arauto", "Serpente", "Dragão", "mordedor", "cortante", "sombrífugo", "escamante", "laminar", "torpedor",
+"traiçoeiro", "lamacento", "sibilante", "fulgurante", "abissário", "marmóreo",
+"reluzente", "carapaçado", "venenário", "vibrátil", "corrosivo", "estalante",
+"naufragante", "murmurante", "cristalhado", "errante", "escarlino", "profundal",
+"arremessador", "triturante", "esguichador", "rastejante", "volúvel", "ciclônico",
+"rasgador", "lacustre", "pressurizado", "oscílfico", "intempérico", "gélido",
+"estelar", "fervente", "marítmico", "irrompente", "escamosselado", "tempestário",
+"diluviano", "luminescente", "ferroante", "dentílico", "arqueante", "obscurial",
+"sibiloso", "ondulante", "quebrador", "devasante", "vagalhante", "submersível",
+"gorgolejante", "estagnado", "retorcido", "perfurante", "retilíneo", "mordaz",
+"torvelínico", "lamuriondo", "encrespado", "ruidoso", "caudaloso", "espiralante",
+"escamacular", "ofuscante", "profusivo", "estalagante"
+        ];
+
+        // --- SISTEMA DE AUTENTICAÇÃO ---
+
+        window.toggleAuthMode = (mode) => {
+            const isLogin = mode === 'login';
+            document.getElementById('field-username').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('btn-mode-login').className = isLogin ? 'flex-1 py-2 rounded font-bold text-sm bg-blue-600 text-white' : 'flex-1 py-2 rounded font-bold text-sm text-slate-400';
+            document.getElementById('btn-mode-signup').className = !isLogin ? 'flex-1 py-2 rounded font-bold text-sm bg-blue-600 text-white' : 'flex-1 py-2 rounded font-bold text-sm text-slate-400';
+            document.getElementById('btn-auth-submit').innerHTML = isLogin ? '<span>Entrar</span>' : '<span>Criar Conta</span>';
+            document.getElementById('auth-form').dataset.mode = mode;
+        }
+
+        window.handleAuth = async (e) => {
+            e.preventDefault();
+            const mode = e.target.dataset.mode || 'login';
+            const email = document.getElementById('input-email').value;
+            const password = document.getElementById('input-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            const btn = document.getElementById('btn-auth-submit');
+            
+            errorDiv.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loader"></div>';
+
+            try {
+                if (mode === 'signup') {
+                    const username = document.getElementById('input-username').value;
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(cred.user, { displayName: username });
+                    await setDoc(doc(db, 'users', cred.user.uid), {
+                        username: username,
+                        balance: 100,
+                        inventory: [],
+                        lastUpdated: serverTimestamp()
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (err) {
+                console.error(err);
+                errorDiv.textContent = "Erro: " + err.message;
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerHTML = mode === 'signup' ? 'Criar Conta' : 'Entrar';
+            }
+        };
+
+        // Salvar antes de sair
+        window.handleLogout = async () => {
+            if (accumulatedIncome > 0 && currentUser) {
+                const userRef = doc(db, 'users', currentUser.uid);
+                await updateDoc(userRef, {
+                    balance: increment(accumulatedIncome)
+                });
+                accumulatedIncome = 0;
+            }
+            // Limpa Listeners
+            if (unsubUser) unsubUser();
+            if (unsubMarket) unsubMarket();
+            
+            signOut(auth);
+        }
+        window.logout = window.handleLogout;
+
+        // Observer Auth State
+        onAuthStateChanged(auth, async (user) => {
+            const loginScreen = document.getElementById('login-screen');
+            const gameUI = document.getElementById('game-ui');
+
+            // Cleanup previous listeners if any
+            if (unsubUser) { unsubUser(); unsubUser = null; }
+            if (unsubMarket) { unsubMarket(); unsubMarket = null; }
+
+            if (user) {
+                currentUser = user;
+                loginScreen.style.opacity = '0';
+                setTimeout(() => loginScreen.style.display = 'none', 300);
+                gameUI.classList.remove('hidden');
+                
+                document.getElementById('user-avatar').textContent = (user.displayName || 'U')[0].toUpperCase();
+                
+                // Realtime Listener User (Stored in unsubUser)
+                unsubUser = onSnapshot(doc(db, 'users', user.uid), async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        const serverInventory = data.inventory || [];
+                        const serverBalance = data.balance || 0;
+                        
+                        userData = { 
+                            ...data, 
+                            inventory: serverInventory,
+                            balance: serverBalance 
+                        };
+                        
+                        updateIncomeRate();
+                        updateUI();
+                        renderInventory();
+                    } else {
+                        // Auto-Heal
+                        await setDoc(doc(db, 'users', user.uid), {
+                            username: user.displayName || 'Pescador',
+                            balance: 100,
+                            inventory: [],
+                            lastUpdated: serverTimestamp()
+                        });
+                    }
+                });
+
+                // Market Listener (Stored in unsubMarket)
+                // FIX: Captura ID do Documento do Mercado separadamente do ID do peixe
+                const q = query(collection(db, 'market'), orderBy('createdAt', 'desc'));
+                unsubMarket = onSnapshot(q, (snapshot) => {
+                    renderMarket(snapshot.docs.map(d => ({ ...d.data(), marketDocId: d.id })));
+                });
+
+                startIncomeLoop();
+
+            } else {
+                // Logout State
+                currentUser = null;
+                userData = { balance: 0, inventory: [], incomeRate: 0 };
+                accumulatedIncome = 0;
+                window.itemsCache = {};
+                
+                loginScreen.style.display = 'flex';
+                setTimeout(() => loginScreen.style.opacity = '1', 10);
+                gameUI.classList.add('hidden');
+                document.getElementById('btn-auth-submit').disabled = false;
+                document.getElementById('btn-auth-submit').textContent = 'Entrar';
+            }
+        });
+
+        // --- LÓGICA DO JOGO ---
+
+        function updateIncomeRate() {
+            let rate = 0;
+            userData.inventory.forEach(item => {
+                const inc = parseFloat(item.incomeRate);
+                if (!isNaN(inc)) rate += inc;
+            });
+            userData.incomeRate = rate;
+            document.getElementById('user-income').textContent = rate;
+        }
+
+        // Sistema de Renda Passiva
+        function startIncomeLoop() {
+            if (window.incomeInterval) clearInterval(window.incomeInterval);
+            if (window.syncInterval) clearInterval(window.syncInterval);
+
+            // 1. Visual Loop
+            window.incomeInterval = setInterval(() => {
+                if (!userData.incomeRate) return;
+                accumulatedIncome += userData.incomeRate;
+                updateUI();
+                showMoneyPopup(userData.incomeRate);
+            }, 1000);
+
+            // 2. Database Sync Loop
+            window.syncInterval = setInterval(async () => {
+                if (!currentUser || accumulatedIncome <= 0) return;
+                
+                const amountToSave = accumulatedIncome;
+                accumulatedIncome = 0; 
+
+                try {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    await updateDoc(userRef, {
+                        balance: increment(amountToSave)
+                    });
+                    console.log(`Saved ${amountToSave} to DB`);
+                } catch (e) {
+                    console.error("Save failed, restoring balance", e);
+                    accumulatedIncome += amountToSave; 
+                }
+            }, 60000); 
+        }
+
+        function showMoneyPopup(amount) {
+            const container = document.getElementById('income-popups');
+            const el = document.createElement('div');
+            el.className = 'money-popup';
+            el.textContent = `+${amount}`;
+            el.style.left = Math.random() * 50 + '%';
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function updateUI() {
+            const totalVisualBalance = (userData.balance || 0) + accumulatedIncome;
+            document.getElementById('user-balance').textContent = Math.floor(totalVisualBalance).toLocaleString('pt-BR');
+            document.getElementById('inventory-count').textContent = userData.inventory.length;
+            lucide.createIcons();
+        }
+
+        window.switchTab = async (tab) => {
+            activeTab = tab;
+            ['fishing', 'inventory', 'market'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                
+                if (t === tab) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'scale-105', 'border-blue-500');
+                    btn.classList.remove('bg-slate-800', 'text-slate-400');
+                    view.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'scale-105', 'border-blue-500');
+                    btn.classList.add('bg-slate-800', 'text-slate-400');
+                    view.classList.add('hidden');
+                }
+            });
+
+            // Force Save on Tab Switch (Melhora sincronia)
+            if (accumulatedIncome > 0 && currentUser) {
+                const saved = accumulatedIncome;
+                accumulatedIncome = 0;
+                // Não usamos await para não travar a UI
+                updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(saved) })
+                    .catch(e => {
+                        console.error("Erro no autosave de aba", e);
+                        accumulatedIncome += saved; // Restaura em caso de erro
+                    });
+            }
+        };
+
+        // --- SISTEMA DE PESCA ---
+
+        function generateFish() {
+            const rand = Math.random() * 100;
+            let rarityKey = 'COMMON';
+            let cumulative = 0;
+            
+            for (const key of Object.keys(RARITIES)) {
+                cumulative += RARITIES[key].chance;
+                if (rand <= cumulative) {
+                    rarityKey = key;
+                    break;
+                }
+            }
+
+            const r = RARITIES[rarityKey];
+            const name = `${NAMES_PREFIX[Math.floor(Math.random() * NAMES_PREFIX.length)]} ${NAMES_SUFFIX[Math.floor(Math.random() * NAMES_SUFFIX.length)]}`;
+            const value = Math.floor(Math.random() * (r.maxVal - r.minVal + 1)) + r.minVal;
+            const emoji = r.emoji[Math.floor(Math.random() * r.emoji.length)];
+
+            return {
+                id: crypto.randomUUID(),
+                name,
+                rarity: rarityKey,
+                emoji,
+                value,
+                incomeRate: r.income,
+                caughtAt: Date.now()
+            };
+        }
+
+        window.startFishing = async () => {
+            const currentTotal = (userData.balance || 0) + accumulatedIncome;
+            
+            if (currentTotal < BET_AMOUNT) {
+                showModal('error', 'Sem Isca!', 'Você precisa de $20 para pescar. Espere sua renda passiva ou venda peixes.');
+                return;
+            }
+
+            document.getElementById('fishing-idle').classList.add('hidden');
+            document.getElementById('fishing-loading').classList.remove('hidden');
+
+            try {
+                // Force save accumulated income before spending
+                if (accumulatedIncome > 0) {
+                    const saved = accumulatedIncome;
+                    accumulatedIncome = 0;
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    await updateDoc(userRef, { balance: increment(saved) });
+                }
+
+                const newFish = generateFish();
+                const userRef = doc(db, 'users', currentUser.uid);
+
+                await runTransaction(db, async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists()) throw "Usuário não encontrado";
+                    
+                    const currentBal = userDoc.data().balance;
+                    if (currentBal < BET_AMOUNT) throw "Saldo insuficiente no servidor";
+
+                    const currentInv = userDoc.data().inventory || [];
+                    
+                    transaction.update(userRef, {
+                        balance: currentBal - BET_AMOUNT,
+                        inventory: [...currentInv, newFish]
+                    });
+                });
+
+                setTimeout(() => {
+                    document.getElementById('fishing-loading').classList.add('hidden');
+                    const resDiv = document.getElementById('fishing-result');
+                    const r = RARITIES[newFish.rarity];
+                    
+                    document.getElementById('caught-rarity-badge').textContent = r.label;
+                    document.getElementById('caught-rarity-badge').className = `inline-block px-3 py-1 rounded text-xs font-bold uppercase tracking-widest mb-4 border ${r.color} ${r.border} bg-slate-900`;
+                    document.getElementById('caught-emoji').textContent = newFish.emoji;
+                    document.getElementById('caught-name').textContent = newFish.name;
+                    document.getElementById('caught-name').className = `text-2xl font-black mb-4 truncate ${r.color}`;
+                    document.getElementById('caught-value').textContent = '$' + newFish.value;
+                    document.getElementById('caught-income').textContent = '+$' + newFish.incomeRate + '/s';
+                    
+                    resDiv.classList.remove('hidden');
+                }, 1500);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('fishing-loading').classList.add('hidden');
+                document.getElementById('fishing-idle').classList.remove('hidden');
+                showModal('error', 'Ops!', 'Erro ao pescar: ' + err);
+            }
+        };
+
+        window.resetFishing = () => {
+            document.getElementById('fishing-result').classList.add('hidden');
+            document.getElementById('fishing-idle').classList.remove('hidden');
+        }
+
+        // --- RENDERIZAÇÃO DE CARTAS (USANDO CACHE) ---
+
+        function createFishCardHTML(fish, type) {
+            const r = RARITIES[fish.rarity];
+            const isOurs = type === 'inventory';
+            
+            // Salva no cache para acesso seguro
+            window.itemsCache[fish.id] = fish;
+
+            let actionButtons = '';
+            if (isOurs) {
+                // Usa ID string para evitar erro de JSON no HTML
+                actionButtons = `
+                    <div class="flex gap-2 w-full mt-2">
+                        <button onclick="window.askSell('${fish.id}')" class="flex-1 bg-red-900/30 hover:bg-red-900/50 border border-red-900 text-red-300 text-xs py-1.5 rounded transition-colors">Vender</button>
+                        <button onclick="window.askList('${fish.id}')" class="flex-1 bg-blue-900/30 hover:bg-blue-900/50 border border-blue-900 text-blue-300 text-xs py-1.5 rounded transition-colors">Trocar</button>
+                    </div>
+                `;
+            } else {
+                window.itemsCache[fish.id] = fish; // Cache market items too
+                const isMyListing = fish.sellerId === currentUser.uid;
+                if (isMyListing) {
+                    actionButtons = `<button onclick="window.buyFish('${fish.id}')" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-white text-xs py-1.5 rounded">Cancelar Venda</button>`;
+                } else {
+                    actionButtons = `
+                        <div class="mt-2 w-full bg-slate-950/80 rounded border border-green-900 p-1 text-center mb-1">
+                            <span class="text-xs text-slate-500">Preço:</span> <span class="text-green-400 font-bold">$${fish.price}</span>
+                        </div>
+                        <button onclick="window.buyFish('${fish.id}')" class="w-full bg-green-700 hover:bg-green-600 text-white font-bold text-xs py-2 rounded shadow-lg shadow-green-900/20">COMPRAR</button>
+                    `;
+                }
+            }
+
+            return `
+                <div class="relative bg-slate-900/40 border ${r.border} p-3 rounded-xl flex flex-col items-center hover:bg-slate-900/60 transition-all fish-card group">
+                    <div class="absolute top-2 right-2 text-[10px] font-mono opacity-50 text-slate-400">#${fish.rarity.substring(0,3)}</div>
+                    <div class="text-5xl mb-2 filter drop-shadow-md group-hover:scale-110 transition-transform">${fish.emoji}</div>
+                    <div class="font-bold text-sm ${r.color} mb-1 text-center leading-tight">${fish.name}</div>
+                    
+                    <div class="grid grid-cols-2 gap-1 w-full text-center">
+                        <div class="bg-black/30 rounded p-1">
+                            <div class="text-[8px] text-slate-500 uppercase">Valor</div>
+                            <div class="text-xs text-green-400 font-mono">$${fish.value}</div>
+                        </div>
+                        <div class="bg-black/30 rounded p-1">
+                            <div class="text-[8px] text-slate-500 uppercase">Renda</div>
+                            <div class="text-xs text-yellow-400 font-mono">+${fish.incomeRate}</div>
+                        </div>
+                    </div>
+                    ${actionButtons}
+                </div>
+            `;
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inventory-grid');
+            const empty = document.getElementById('inventory-empty');
+            
+            if (userData.inventory.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            // --- Sorting Logic: Highest Weight (Rarest) First ---
+            const sortedInventory = [...userData.inventory].sort((a, b) => {
+                const weightA = RARITIES[a.rarity]?.weight || 0;
+                const weightB = RARITIES[b.rarity]?.weight || 0;
+                // Descending order (5 -> 1)
+                return weightB - weightA;
+            });
+
+            empty.classList.add('hidden');
+            grid.innerHTML = sortedInventory.map(f => createFishCardHTML(f, 'inventory')).join('');
+        }
+
+        function renderMarket(items) {
+            const grid = document.getElementById('market-grid');
+            const empty = document.getElementById('market-empty');
+            
+            // Cache market items specifically with map to prevent overwrite conflicts with inventory sharing same IDs (though unlikely due to UUID)
+            // But we use same cache for simplicity
+            
+            if (items.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            grid.innerHTML = items.map(f => createFishCardHTML(f, 'market')).join('');
+        }
+
+        // --- AÇÕES DO JOGO (COM CACHE SAFE) ---
+
+        window.askSell = (id) => {
+            const fish = window.itemsCache[id];
+            if (!fish) return console.error("Peixe não encontrado no cache");
+
+            showModal('confirm', `Vender ${fish.name}?`, 
+                `<div class="text-center mb-4">
+                    <div class="text-4xl mb-2">${fish.emoji}</div>
+                    <p class="text-slate-400">Você receberá <span class="text-green-400 font-bold">$${fish.value}</span> imediatamente.</p>
+                </div>`,
+                async () => {
+                    closeModal();
+                    if (accumulatedIncome > 0) {
+                        const saved = accumulatedIncome;
+                        accumulatedIncome = 0;
+                        await updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(saved) });
+                    }
+
+                    await runTransaction(db, async (t) => {
+                        const userRef = doc(db, 'users', currentUser.uid);
+                        const docSnap = await t.get(userRef);
+                        const inv = docSnap.data().inventory;
+                        const newInv = inv.filter(i => i.id !== fish.id);
+                        if (inv.length === newInv.length) return;
+                        
+                        t.update(userRef, {
+                            inventory: newInv,
+                            balance: increment(fish.value)
+                        });
+                    });
+                }
+            );
+        };
+
+        window.askList = (id) => {
+            const fish = window.itemsCache[id];
+            if (!fish) return;
+
+            showModal('input', `Anunciar ${fish.name}`, 
+                `<div class="text-center mb-4">
+                    <div class="text-4xl mb-2">${fish.emoji}</div>
+                    <label class="block text-left text-xs text-slate-500 mb-1 ml-1">Preço de Venda ($)</label>
+                    <input type="number" id="modal-input-price" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white" value="${fish.value * 2}">
+                    <p class="text-xs text-slate-500 mt-1 text-left">Valor sugerido: $${fish.value * 2}</p>
+                </div>`,
+                async () => {
+                    const price = parseInt(document.getElementById('modal-input-price').value);
+                    if (!price || price <= 0) return alert("Preço inválido");
+                    
+                    closeModal();
+                    
+                    await runTransaction(db, async (t) => {
+                        const userRef = doc(db, 'users', currentUser.uid);
+                        const docSnap = await t.get(userRef);
+                        const inv = docSnap.data().inventory;
+                        const newInv = inv.filter(i => i.id !== fish.id);
+                        
+                        if (inv.length === newInv.length) throw "Item sumiu";
+
+                        t.update(userRef, { inventory: newInv });
+                    });
+
+                    await addDoc(collection(db, 'market'), {
+                        ...fish,
+                        price: price,
+                        sellerId: currentUser.uid,
+                        sellerName: currentUser.displayName,
+                        createdAt: serverTimestamp()
+                    });
+                }
+            );
+        };
+
+        window.buyFish = async (id) => {
+            const marketItem = window.itemsCache[id];
+            if (!marketItem) return;
+
+            const currentTotal = (userData.balance || 0) + accumulatedIncome;
+
+            // FIX: Usar o ID do documento do mercado para deletar/transacionar
+            // O ID do peixe (uuid) não é o mesmo ID do documento do mercado (auto-generated)
+            const marketDocRef = doc(db, 'market', marketItem.marketDocId); 
+
+            if (marketItem.sellerId === currentUser.uid) {
+                // Cancelar Venda
+                const userRef = doc(db, 'users', currentUser.uid);
+                await deleteDoc(marketDocRef);
+                const { price, sellerId, sellerName, createdAt, marketDocId, ...fishData } = marketItem;
+                await updateDoc(userRef, { inventory: arrayUnion(fishData) });
+                return;
+            }
+
+            if (currentTotal < marketItem.price) {
+                return showModal('error', 'Saldo Insuficiente', 'Você precisa pescar mais para comprar este peixe!');
+            }
+
+            try {
+                if (accumulatedIncome > 0) {
+                    const saved = accumulatedIncome;
+                    accumulatedIncome = 0;
+                    await updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(saved) });
+                }
+
+                await runTransaction(db, async (transaction) => {
+                    const buyerRef = doc(db, 'users', currentUser.uid);
+                    const sellerRef = doc(db, 'users', marketItem.sellerId);
+
+                    // Verificar se o documento do mercado ainda existe
+                    const mDoc = await transaction.get(marketDocRef);
+                    if (!mDoc.exists()) throw "Este peixe já foi vendido!";
+
+                    const bDoc = await transaction.get(buyerRef);
+                    if (bDoc.data().balance < marketItem.price) throw "Sem dinheiro no momento da transação";
+
+                    transaction.delete(marketDocRef);
+                    
+                    const { price, sellerId, sellerName, createdAt, marketDocId, ...fishData } = marketItem;
+                    const bInv = bDoc.data().inventory || [];
+                    
+                    transaction.update(buyerRef, {
+                        balance: increment(-price),
+                        inventory: [...bInv, fishData]
+                    });
+
+                    transaction.update(sellerRef, {
+                        balance: increment(price)
+                    });
+                });
+                showModal('error', 'Sucesso!', 'Peixe comprado. Verifique seu tanque.');
+            } catch (e) {
+                showModal('error', 'Erro', 'Falha na compra: ' + e);
+            }
+        };
+
+        // --- UTILITÁRIOS ---
+        
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContent = document.getElementById('modal-content');
+
+        window.showModal = (type, title, htmlContent, onConfirm) => {
+            let footer = '';
+            
+            if (type === 'error') {
+                footer = `<button onclick="closeModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded font-bold">Fechar</button>`;
+            } else if (type === 'confirm' || type === 'input') {
+                footer = `
+                    <div class="flex gap-2">
+                        <button onclick="closeModal()" class="flex-1 bg-slate-800 text-slate-400 py-2 rounded font-bold">Cancelar</button>
+                        <button id="modal-confirm-btn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded font-bold">Confirmar</button>
+                    </div>
+                `;
+            }
+
+            modalContent.innerHTML = `
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-white mb-2">${title}</h3>
+                    <div class="text-sm text-slate-300 mb-6">${htmlContent}</div>
+                    ${footer}
+                </div>
+            `;
+
+            modalOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                modalOverlay.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+
+            if (onConfirm) {
+                document.getElementById('modal-confirm-btn').onclick = onConfirm;
+            }
+        };
+
+        window.closeModal = () => {
+            modalOverlay.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => modalOverlay.classList.add('hidden'), 300);
+        };
+
+        // Save on Close Tab (Best Effort)
+        window.addEventListener('beforeunload', () => {
+             if (accumulatedIncome > 0 && currentUser) {
+                 // Beacon API is ideal but complex with Auth, rely on best effort
+             }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
